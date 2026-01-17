@@ -1,0 +1,875 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "HitboxChanger"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 260, 0, 180)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -90)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(60, 60, 70)
+mainStroke.Thickness = 2
+mainStroke.Transparency = 0.5
+mainStroke.Parent = mainFrame
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 12)
+titleFix.Position = UDim2.new(0, 0, 1, -12)
+titleFix.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -100, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Hitbox changer & esp"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 15
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local settingsButtonTop = Instance.new("TextButton")
+settingsButtonTop.Name = "SettingsButtonTop"
+settingsButtonTop.Size = UDim2.new(0, 26, 0, 26)
+settingsButtonTop.Position = UDim2.new(1, -90, 0, 4)
+settingsButtonTop.BackgroundColor3 = Color3.fromRGB(100, 100, 120)
+settingsButtonTop.BorderSizePixel = 0
+settingsButtonTop.Text = "⚙"
+settingsButtonTop.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsButtonTop.TextSize = 14
+settingsButtonTop.Font = Enum.Font.GothamBold
+settingsButtonTop.Parent = titleBar
+
+local settingsTopCorner = Instance.new("UICorner")
+settingsTopCorner.CornerRadius = UDim.new(0, 6)
+settingsTopCorner.Parent = settingsButtonTop
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Size = UDim2.new(0, 26, 0, 26)
+minimizeButton.Position = UDim2.new(1, -58, 0, 4)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+minimizeButton.BorderSizePixel = 0
+minimizeButton.Text = "_"
+minimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+minimizeButton.TextSize = 14
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.Parent = titleBar
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 6)
+minimizeCorner.Parent = minimizeButton
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 26, 0, 26)
+closeButton.Position = UDim2.new(1, -28, 0, 4)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 13
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, 0, 1, -35)
+contentFrame.Position = UDim2.new(0, 0, 0, 35)
+contentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+contentFrame.BorderSizePixel = 0
+contentFrame.Parent = mainFrame
+
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Size = UDim2.new(0, 75, 0, 22)
+sizeLabel.Position = UDim2.new(0, 12, 0, 8)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Text = "Hitbox Size:"
+sizeLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+sizeLabel.TextSize = 12
+sizeLabel.Font = Enum.Font.Gotham
+sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+sizeLabel.Parent = contentFrame
+
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 80, 0, 28)
+textBox.Position = UDim2.new(0, 90, 0, 6)
+textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+textBox.BorderSizePixel = 0
+textBox.Text = "10"
+textBox.PlaceholderText = "Size"
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.TextSize = 12
+textBox.Font = Enum.Font.Gotham
+textBox.Parent = contentFrame
+
+local textBoxCorner = Instance.new("UICorner")
+textBoxCorner.CornerRadius = UDim.new(0, 7)
+textBoxCorner.Parent = textBox
+
+local textBoxStroke = Instance.new("UIStroke")
+textBoxStroke.Color = Color3.fromRGB(80, 80, 90)
+textBoxStroke.Thickness = 1
+textBoxStroke.Parent = textBox
+
+local applyButton = Instance.new("TextButton")
+applyButton.Size = UDim2.new(0, 50, 0, 28)
+applyButton.Position = UDim2.new(0, 178, 0, 6)
+applyButton.BackgroundColor3 = Color3.fromRGB(80, 150, 255)
+applyButton.BorderSizePixel = 0
+applyButton.Text = "Apply"
+applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+applyButton.TextSize = 12
+applyButton.Font = Enum.Font.GothamBold
+applyButton.Parent = contentFrame
+
+local applyCorner = Instance.new("UICorner")
+applyCorner.CornerRadius = UDim.new(0, 7)
+applyCorner.Parent = applyButton
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 236, 0, 32)
+toggleButton.Position = UDim2.new(0, 12, 0, 42)
+toggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+toggleButton.BorderSizePixel = 0
+toggleButton.Text = "Hitbox: OFF"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 13
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Parent = contentFrame
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 7)
+toggleCorner.Parent = toggleButton
+
+local espToggleButton = Instance.new("TextButton")
+espToggleButton.Size = UDim2.new(0, 236, 0, 32)
+espToggleButton.Position = UDim2.new(0, 12, 0, 80)
+espToggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+espToggleButton.BorderSizePixel = 0
+espToggleButton.Text = "ESP: OFF"
+espToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+espToggleButton.TextSize = 13
+espToggleButton.Font = Enum.Font.GothamBold
+espToggleButton.Parent = contentFrame
+
+local espToggleCorner = Instance.new("UICorner")
+espToggleCorner.CornerRadius = UDim.new(0, 7)
+espToggleCorner.Parent = espToggleButton
+
+local footerLabel = Instance.new("TextButton")
+footerLabel.Size = UDim2.new(1, 0, 0, 25)
+footerLabel.Position = UDim2.new(0, 0, 1, -25)
+footerLabel.BackgroundTransparency = 1
+footerLabel.Text = "by: romokaso"
+footerLabel.TextColor3 = Color3.fromRGB(120, 120, 130)
+footerLabel.TextSize = 10
+footerLabel.Font = Enum.Font.GothamBold
+footerLabel.Parent = contentFrame
+
+local footerLabelMinimized = Instance.new("TextButton")
+footerLabelMinimized.Size = UDim2.new(1, 0, 0, 25)
+footerLabelMinimized.Position = UDim2.new(0, 0, 1, -25)
+footerLabelMinimized.BackgroundTransparency = 1
+footerLabelMinimized.Text = "by: romokaso"
+footerLabelMinimized.TextColor3 = Color3.fromRGB(120, 120, 130)
+footerLabelMinimized.TextSize = 10
+footerLabelMinimized.Font = Enum.Font.GothamBold
+footerLabelMinimized.Visible = false
+footerLabelMinimized.Parent = mainFrame
+
+local confirmFrame = Instance.new("Frame")
+confirmFrame.Name = "ConfirmFrame"
+confirmFrame.Size = UDim2.new(1, 0, 1, 0)
+confirmFrame.Position = UDim2.new(0, 0, 0, 0)
+confirmFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+confirmFrame.BackgroundTransparency = 1
+confirmFrame.BorderSizePixel = 0
+confirmFrame.Visible = false
+confirmFrame.ZIndex = 10
+confirmFrame.Parent = mainFrame
+
+local confirmCorner = Instance.new("UICorner")
+confirmCorner.CornerRadius = UDim.new(0, 12)
+confirmCorner.Parent = confirmFrame
+
+local confirmText = Instance.new("TextLabel")
+confirmText.Size = UDim2.new(1, -24, 0, 40)
+confirmText.Position = UDim2.new(0, 12, 0, 45)
+confirmText.BackgroundTransparency = 1
+confirmText.Text = "Are you sure you want\nto close the GUI?"
+confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmText.TextSize = 13
+confirmText.Font = Enum.Font.GothamBold
+confirmText.TextWrapped = true
+confirmText.ZIndex = 11
+confirmText.Parent = confirmFrame
+
+local yesButton = Instance.new("TextButton")
+yesButton.Size = UDim2.new(0, 105, 0, 32)
+yesButton.Position = UDim2.new(0, 20, 0, 100)
+yesButton.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+yesButton.BorderSizePixel = 0
+yesButton.Text = "Yes"
+yesButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+yesButton.TextSize = 13
+yesButton.Font = Enum.Font.GothamBold
+yesButton.ZIndex = 11
+yesButton.Parent = confirmFrame
+
+local yesCorner = Instance.new("UICorner")
+yesCorner.CornerRadius = UDim.new(0, 7)
+yesCorner.Parent = yesButton
+
+local noButton = Instance.new("TextButton")
+noButton.Size = UDim2.new(0, 105, 0, 32)
+noButton.Position = UDim2.new(0, 135, 0, 100)
+noButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+noButton.BorderSizePixel = 0
+noButton.Text = "No"
+noButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+noButton.TextSize = 13
+noButton.Font = Enum.Font.GothamBold
+noButton.ZIndex = 11
+noButton.Parent = confirmFrame
+
+local noCorner = Instance.new("UICorner")
+noCorner.CornerRadius = UDim.new(0, 7)
+noCorner.Parent = noButton
+
+local settingsFrame = Instance.new("Frame")
+settingsFrame.Name = "SettingsFrame"
+settingsFrame.Size = UDim2.new(1, 0, 1, 0)
+settingsFrame.Position = UDim2.new(1, 0, 0, 0)
+settingsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+settingsFrame.BorderSizePixel = 0
+settingsFrame.Visible = false
+settingsFrame.ZIndex = 10
+settingsFrame.Parent = mainFrame
+
+local settingsFrameCorner = Instance.new("UICorner")
+settingsFrameCorner.CornerRadius = UDim.new(0, 12)
+settingsFrameCorner.Parent = settingsFrame
+
+local settingsTitleBar = Instance.new("Frame")
+settingsTitleBar.Size = UDim2.new(1, 0, 0, 35)
+settingsTitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+settingsTitleBar.BorderSizePixel = 0
+settingsTitleBar.ZIndex = 11
+settingsTitleBar.Parent = settingsFrame
+
+local settingsTitleCorner = Instance.new("UICorner")
+settingsTitleCorner.CornerRadius = UDim.new(0, 12)
+settingsTitleCorner.Parent = settingsTitleBar
+
+local settingsTitleFix = Instance.new("Frame")
+settingsTitleFix.Size = UDim2.new(1, 0, 0, 12)
+settingsTitleFix.Position = UDim2.new(0, 0, 1, -12)
+settingsTitleFix.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+settingsTitleFix.BorderSizePixel = 0
+settingsTitleFix.ZIndex = 11
+settingsTitleFix.Parent = settingsTitleBar
+
+local settingsTitleLabel = Instance.new("TextLabel")
+settingsTitleLabel.Size = UDim2.new(1, -50, 1, 0)
+settingsTitleLabel.Position = UDim2.new(0, 10, 0, 0)
+settingsTitleLabel.BackgroundTransparency = 1
+settingsTitleLabel.Text = "Settings"
+settingsTitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsTitleLabel.TextSize = 15
+settingsTitleLabel.Font = Enum.Font.GothamBold
+settingsTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+settingsTitleLabel.ZIndex = 11
+settingsTitleLabel.Parent = settingsTitleBar
+
+local backButton = Instance.new("TextButton")
+backButton.Size = UDim2.new(0, 26, 0, 26)
+backButton.Position = UDim2.new(1, -28, 0, 4)
+backButton.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+backButton.BorderSizePixel = 0
+backButton.Text = "←"
+backButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+backButton.TextSize = 14
+backButton.Font = Enum.Font.GothamBold
+backButton.ZIndex = 11
+backButton.Parent = settingsTitleBar
+
+local backCorner = Instance.new("UICorner")
+backCorner.CornerRadius = UDim.new(0, 6)
+backCorner.Parent = backButton
+
+local settingsContentFrame = Instance.new("Frame")
+settingsContentFrame.Size = UDim2.new(1, 0, 1, -35)
+settingsContentFrame.Position = UDim2.new(0, 0, 0, 35)
+settingsContentFrame.BackgroundTransparency = 1
+settingsContentFrame.BorderSizePixel = 0
+settingsContentFrame.ZIndex = 11
+settingsContentFrame.Parent = settingsFrame
+
+local themeLabel = Instance.new("TextLabel")
+themeLabel.Size = UDim2.new(1, -24, 0, 22)
+themeLabel.Position = UDim2.new(0, 12, 0, 15)
+themeLabel.BackgroundTransparency = 1
+themeLabel.Text = "Theme:"
+themeLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+themeLabel.TextSize = 13
+themeLabel.Font = Enum.Font.GothamBold
+themeLabel.TextXAlignment = Enum.TextXAlignment.Left
+themeLabel.ZIndex = 11
+themeLabel.Parent = settingsContentFrame
+
+local darkButton = Instance.new("TextButton")
+darkButton.Size = UDim2.new(0, 110, 0, 38)
+darkButton.Position = UDim2.new(0, 12, 0, 45)
+darkButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+darkButton.BorderSizePixel = 0
+darkButton.Text = "Dark"
+darkButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+darkButton.TextSize = 13
+darkButton.Font = Enum.Font.GothamBold
+darkButton.ZIndex = 11
+darkButton.Parent = settingsContentFrame
+
+local darkCorner = Instance.new("UICorner")
+darkCorner.CornerRadius = UDim.new(0, 7)
+darkCorner.Parent = darkButton
+
+local darkStroke = Instance.new("UIStroke")
+darkStroke.Color = Color3.fromRGB(80, 150, 255)
+darkStroke.Thickness = 3
+darkStroke.ZIndex = 11
+darkStroke.Parent = darkButton
+
+local lightButton = Instance.new("TextButton")
+lightButton.Size = UDim2.new(0, 110, 0, 38)
+lightButton.Position = UDim2.new(0, 138, 0, 45)
+lightButton.BackgroundColor3 = Color3.fromRGB(240, 240, 250)
+lightButton.BorderSizePixel = 0
+lightButton.Text = "Light"
+lightButton.TextColor3 = Color3.fromRGB(30, 30, 40)
+lightButton.TextSize = 13
+lightButton.Font = Enum.Font.GothamBold
+lightButton.ZIndex = 11
+lightButton.Parent = settingsContentFrame
+
+local lightCorner = Instance.new("UICorner")
+lightCorner.CornerRadius = UDim.new(0, 7)
+lightCorner.Parent = lightButton
+
+local hitboxSize = 10
+local isEnabled = false
+local isMinimized = false
+local currentTheme = "dark"
+local isDragging = false
+local dragInput
+local dragStart
+local startPos
+local espEnabled = false
+local espLabels = {}
+local espBoxes = {}
+local lastAnimTime = 0
+local animCooldown = 0.15
+
+local function animateButton(button)
+local currentTime = tick()
+if currentTime - lastAnimTime < animCooldown then
+    return
+end
+lastAnimTime = currentTime
+
+local originalSize = button.Size
+local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+TweenService:Create(button, tweenInfo, {Size = originalSize + UDim2.new(0, 4, 0, 4)}):Play()
+task.wait(0.1)
+TweenService:Create(button, tweenInfo, {Size = originalSize}):Play()
+end
+
+local function applyTheme(theme)
+currentTheme = theme
+local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+if theme == "light" then
+    TweenService:Create(mainFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(contentFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(mainStroke, tweenInfo, {Color = Color3.fromRGB(200, 200, 210)}):Play()
+    TweenService:Create(titleBar, tweenInfo, {BackgroundColor3 = Color3.fromRGB(245, 245, 250)}):Play()
+    TweenService:Create(titleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(245, 245, 250)}):Play()
+    TweenService:Create(titleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(sizeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
+    TweenService:Create(textBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(235, 235, 245), TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(textBoxStroke, tweenInfo, {Color = Color3.fromRGB(200, 200, 210)}):Play()
+    TweenService:Create(footerLabel, tweenInfo, {TextColor3 = Color3.fromRGB(100, 100, 110)}):Play()
+    TweenService:Create(footerLabelMinimized, tweenInfo, {TextColor3 = Color3.fromRGB(100, 100, 110)}):Play()
+    TweenService:Create(confirmFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(confirmText, tweenInfo, {TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(settingsFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(settingsTitleBar, tweenInfo, {BackgroundColor3 = Color3.fromRGB(245, 245, 250)}):Play()
+    TweenService:Create(settingsTitleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(245, 245, 250)}):Play()
+    TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
+    TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(200, 200, 220), TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    
+    TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(200, 200, 210)}):Play()
+    if not lightButton:FindFirstChild("UIStroke") then
+        local lightStroke = Instance.new("UIStroke")
+        lightStroke.Color = Color3.fromRGB(80, 150, 255)
+        lightStroke.Thickness = 3
+        lightStroke.Transparency = 1
+        lightStroke.ZIndex = 11
+        lightStroke.Parent = lightButton
+        TweenService:Create(lightStroke, tweenInfo, {Transparency = 0}):Play()
+    end
+else
+    TweenService:Create(mainFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(20, 20, 25)}):Play()
+    TweenService:Create(contentFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(20, 20, 25)}):Play()
+    TweenService:Create(mainStroke, tweenInfo, {Color = Color3.fromRGB(60, 60, 70)}):Play()
+    TweenService:Create(titleBar, tweenInfo, {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(titleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(titleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(sizeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
+    TweenService:Create(textBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 40, 50), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(textBoxStroke, tweenInfo, {Color = Color3.fromRGB(80, 80, 90)}):Play()
+    TweenService:Create(footerLabel, tweenInfo, {TextColor3 = Color3.fromRGB(120, 120, 130)}):Play()
+    TweenService:Create(footerLabelMinimized, tweenInfo, {TextColor3 = Color3.fromRGB(120, 120, 130)}):Play()
+    TweenService:Create(confirmFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(15, 15, 20)}):Play()
+    TweenService:Create(confirmText, tweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(settingsFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(20, 20, 25)}):Play()
+    TweenService:Create(settingsTitleBar, tweenInfo, {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(settingsTitleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+    TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
+    TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(100, 100, 120), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    
+    if lightButton:FindFirstChild("UIStroke") then
+        local lightStroke = lightButton:FindFirstChild("UIStroke")
+        TweenService:Create(lightStroke, tweenInfo, {Transparency = 1}):Play()
+        task.wait(0.1)
+        lightStroke:Destroy()
+    end
+    TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(80, 150, 255)}):Play()
+end
+end
+
+local function createESP(targetPlayer)
+if espLabels[targetPlayer] or espBoxes[targetPlayer] then
+    return
+end
+
+local char = targetPlayer.Character
+if not char then return end
+
+local billboardGui = Instance.new("BillboardGui")
+billboardGui.Name = "ESP_" .. targetPlayer.Name
+billboardGui.AlwaysOnTop = true
+billboardGui.Size = UDim2.new(0, 200, 0, 50)
+billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+billboardGui.Parent = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(1, 0, 1, 0)
+textLabel.BackgroundTransparency = 1
+textLabel.TextColor3 = Color3.fromRGB(80, 150, 255)
+textLabel.TextStrokeTransparency = 0.5
+textLabel.TextSize = 14
+textLabel.Font = Enum.Font.GothamBold
+textLabel.Parent = billboardGui
+espLabels[targetPlayer] = {gui = billboardGui, label = textLabel}
+
+local hrp = char:FindFirstChild("HumanoidRootPart")
+if hrp then
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESPHighlight_" .. targetPlayer.Name
+    highlight.Adornee = char
+    highlight.FillColor = Color3.fromRGB(80, 150, 255)
+    highlight.OutlineColor = Color3.fromRGB(80, 150, 255)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = char
+    espBoxes[targetPlayer] = highlight
+end
+end
+
+local function removeESP(targetPlayer)
+if espLabels[targetPlayer] then
+    if espLabels[targetPlayer].gui then
+        espLabels[targetPlayer].gui:Destroy()
+    end
+    espLabels[targetPlayer] = nil
+end
+if espBoxes[targetPlayer] then
+    espBoxes[targetPlayer]:Destroy()
+    espBoxes[targetPlayer] = nil
+end
+end
+
+local function updateESP()
+if not espEnabled then return end
+for _, targetPlayer in pairs(Players:GetPlayers()) do
+    if targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        if not espLabels[targetPlayer] then
+            createESP(targetPlayer)
+        end
+        if espLabels[targetPlayer] and espLabels[targetPlayer].gui.Parent == nil then
+            local head = targetPlayer.Character:FindFirstChild("Head")
+            if head then
+                espLabels[targetPlayer].gui.Parent = head
+            end
+        end
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and targetHrp and espLabels[targetPlayer] then
+            local distance = (hrp.Position - targetHrp.Position).Magnitude
+            local studs = math.floor(distance)
+            espLabels[targetPlayer].label.Text = targetPlayer.Name .. "\n" .. studs .. " studs"
+        end
+    elseif espLabels[targetPlayer] or espBoxes[targetPlayer] then
+        removeESP(targetPlayer)
+    end
+end
+end
+
+local function updateHitboxes()
+if not isEnabled then return end
+for _, v in pairs(Players:GetPlayers()) do
+    if v ~= player and v.Character then
+        local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+            hrp.Transparency = 0.7
+            hrp.CanCollide = false
+        end
+    end
+end
+end
+
+Players.PlayerAdded:Connect(function(newPlayer)
+newPlayer.CharacterAdded:Connect(function()
+    task.wait(0.1)
+    updateHitboxes()
+    if espEnabled then
+        createESP(newPlayer)
+    end
+end)
+end)
+
+Players.PlayerRemoving:Connect(function(removedPlayer)
+if espLabels[removedPlayer] or espBoxes[removedPlayer] then
+    removeESP(removedPlayer)
+end
+end)
+
+applyButton.MouseButton1Click:Connect(function()
+animateButton(applyButton)
+local inputValue = tonumber(textBox.Text)
+if inputValue then
+    hitboxSize = inputValue
+    updateHitboxes()
+end
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+animateButton(toggleButton)
+isEnabled = not isEnabled
+if isEnabled then
+    TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+    toggleButton.Text = "Hitbox: ON"
+    updateHitboxes()
+else
+    TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+    toggleButton.Text = "Hitbox: OFF"
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= player and v.Character then
+            local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.Size = Vector3.new(2, 2, 1)
+                hrp.Transparency = 1
+            end
+        end
+    end
+end
+end)
+
+espToggleButton.MouseButton1Click:Connect(function()
+animateButton(espToggleButton)
+espEnabled = not espEnabled
+if espEnabled then
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+    espToggleButton.Text = "ESP: ON"
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= player then
+            createESP(v)
+        end
+    end
+else
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+    espToggleButton.Text = "ESP: OFF"
+    for targetPlayer, _ in pairs(espLabels) do
+        removeESP(targetPlayer)
+    end
+end
+end)
+
+footerLabel.MouseButton1Click:Connect(function()
+animateButton(footerLabel)
+end)
+
+footerLabelMinimized.MouseButton1Click:Connect(function()
+animateButton(footerLabelMinimized)
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+if confirmFrame.Visible or settingsFrame.Visible then return end
+animateButton(minimizeButton)
+isMinimized = not isMinimized
+if isMinimized then
+    TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 260, 0, 60)}):Play()
+    contentFrame.Visible = false
+    footerLabel.Visible = false
+    footerLabelMinimized.Visible = true
+else
+    TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 260, 0, 180)}):Play()
+    contentFrame.Visible = true
+    footerLabel.Visible = true
+    footerLabelMinimized.Visible = false
+end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+if confirmFrame.Visible or settingsFrame.Visible then return end
+animateButton(closeButton)
+if isMinimized then
+    isMinimized = false
+    TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 260, 0, 180)}):Play()
+    contentFrame.Visible = true
+    footerLabel.Visible = true
+    footerLabelMinimized.Visible = false
+    task.wait(0.1)
+end
+confirmFrame.Visible = true
+TweenService:Create(confirmFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.05}):Play()
+end)
+
+yesButton.MouseButton1Click:Connect(function()
+animateButton(yesButton)
+TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Position = UDim2.new(0.5, -130, 0.5, -90), Size = UDim2.new(0, 0, 0, 0)}):Play()
+task.wait(0.3)
+isEnabled = false
+espEnabled = false
+for _, v in pairs(Players:GetPlayers()) do
+    if v ~= player and v.Character then
+        local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Size = Vector3.new(2, 2, 1)
+            hrp.Transparency = 1
+        end
+    end
+end
+for targetPlayer, _ in pairs(espLabels) do
+    removeESP(targetPlayer)
+end
+screenGui:Destroy()
+end)
+
+noButton.MouseButton1Click:Connect(function()
+animateButton(noButton)
+TweenService:Create(confirmFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+task.wait(0.1)
+confirmFrame.Visible = false
+end)
+
+settingsButtonTop.MouseButton1Click:Connect(function()
+if confirmFrame.Visible or settingsFrame.Visible then return end
+animateButton(settingsButtonTop)
+if isMinimized then
+    isMinimized = false
+    TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 260, 0, 180)}):Play()
+    contentFrame.Visible = true
+    footerLabel.Visible = true
+    footerLabelMinimized.Visible = false
+    task.wait(0.1)
+end
+settingsFrame.Visible = true
+settingsFrame.Position = UDim2.new(1, 0, 0, 0)
+TweenService:Create(settingsFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+end)
+
+backButton.MouseButton1Click:Connect(function()
+animateButton(backButton)
+TweenService:Create(settingsFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = UDim2.new(1, 0, 0, 0)}):Play()
+task.wait(0.1)
+settingsFrame.Visible = false
+end)
+
+darkButton.MouseButton1Click:Connect(function()
+animateButton(darkButton)
+applyTheme("dark")
+end)
+
+lightButton.MouseButton1Click:Connect(function()
+animateButton(lightButton)
+applyTheme("light")
+end)
+
+RunService.Heartbeat:Connect(function()
+updateHitboxes()
+updateESP()
+end)
+
+titleBar.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+    isDragging = true
+    dragStart = input.Position
+    startPos = mainFrame.Position
+    input.Changed:Connect(function()
+        if input.UserInputState == Enum.UserInputState.End then
+            isDragging = false
+        end
+    end)
+end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+    dragInput = input
+end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+if input == dragInput and isDragging then
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+end)
+
+applyButton.MouseEnter:Connect(function()
+TweenService:Create(applyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 170, 255)}):Play()
+end)
+
+applyButton.MouseLeave:Connect(function()
+TweenService:Create(applyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 150, 255)}):Play()
+end)
+
+minimizeButton.MouseEnter:Connect(function()
+TweenService:Create(minimizeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 220, 80)}):Play()
+end)
+
+minimizeButton.MouseLeave:Connect(function()
+TweenService:Create(minimizeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 200, 50)}):Play()
+end)
+
+closeButton.MouseEnter:Connect(function()
+TweenService:Create(closeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
+end)
+
+closeButton.MouseLeave:Connect(function()
+TweenService:Create(closeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+end)
+
+settingsButtonTop.MouseEnter:Connect(function()
+if currentTheme == "dark" then
+    TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 120, 140)}):Play()
+else
+    TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 220, 240)}):Play()
+end
+end)
+
+settingsButtonTop.MouseLeave:Connect(function()
+if currentTheme == "dark" then
+    TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 100, 120)}):Play()
+else
+    TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(200, 200, 220)}):Play()
+end
+end)
+
+yesButton.MouseEnter:Connect(function()
+TweenService:Create(yesButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 220, 120)}):Play()
+end)
+
+yesButton.MouseLeave:Connect(function()
+TweenService:Create(yesButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+end)
+
+noButton.MouseEnter:Connect(function()
+TweenService:Create(noButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
+end)
+
+noButton.MouseLeave:Connect(function()
+TweenService:Create(noButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+end)
+
+backButton.MouseEnter:Connect(function()
+TweenService:Create(backButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 100, 110)}):Play()
+end)
+
+backButton.MouseLeave:Connect(function()
+TweenService:Create(backButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 80, 90)}):Play()
+end)
+
+darkButton.MouseEnter:Connect(function()
+TweenService:Create(darkButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}):Play()
+end)
+
+darkButton.MouseLeave:Connect(function()
+TweenService:Create(darkButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+end)
+
+lightButton.MouseEnter:Connect(function()
+TweenService:Create(lightButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+
+lightButton.MouseLeave:Connect(function()
+TweenService:Create(lightButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(240, 240, 250)}):Play()
+end)
+
+espToggleButton.MouseEnter:Connect(function()
+if espEnabled then
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 220, 120)}):Play()
+else
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
+end
+end)
+
+espToggleButton.MouseLeave:Connect(function()
+if espEnabled then
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+else
+    TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+end
+end)
