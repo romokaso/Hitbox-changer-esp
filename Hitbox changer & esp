@@ -345,7 +345,7 @@ settingsContentFrame.Parent = settingsFrame
 
 local themeLabel = Instance.new("TextLabel")
 themeLabel.Size = UDim2.new(1, -24, 0, 22)
-themeLabel.Position = UDim2.new(0, 12, 0, 10)
+themeLabel.Position = UDim2.new(0, 12, 0, 15)
 themeLabel.BackgroundTransparency = 1
 themeLabel.Text = "Theme:"
 themeLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
@@ -356,8 +356,8 @@ themeLabel.ZIndex = 11
 themeLabel.Parent = settingsContentFrame
 
 local darkButton = Instance.new("TextButton")
-darkButton.Size = UDim2.new(0, 110, 0, 32)
-darkButton.Position = UDim2.new(0, 12, 0, 36)
+darkButton.Size = UDim2.new(0, 110, 0, 38)
+darkButton.Position = UDim2.new(0, 12, 0, 45)
 darkButton.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 darkButton.BorderSizePixel = 0
 darkButton.Text = "Dark"
@@ -378,8 +378,8 @@ darkStroke.ZIndex = 11
 darkStroke.Parent = darkButton
 
 local lightButton = Instance.new("TextButton")
-lightButton.Size = UDim2.new(0, 110, 0, 32)
-lightButton.Position = UDim2.new(0, 138, 0, 36)
+lightButton.Size = UDim2.new(0, 110, 0, 38)
+lightButton.Position = UDim2.new(0, 138, 0, 45)
 lightButton.BackgroundColor3 = Color3.fromRGB(240, 240, 250)
 lightButton.BorderSizePixel = 0
 lightButton.Text = "Light"
@@ -393,26 +393,26 @@ local lightCorner = Instance.new("UICorner")
 lightCorner.CornerRadius = UDim.new(0, 7)
 lightCorner.Parent = lightButton
 
-local transparencyLabel = Instance.new("TextLabel")
-transparencyLabel.Size = UDim2.new(0, 150, 0, 22)
-transparencyLabel.Position = UDim2.new(0, 12, 0, 78)
-transparencyLabel.BackgroundTransparency = 1
-transparencyLabel.Text = "Disable Transparency:"
-transparencyLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-transparencyLabel.TextSize = 13
-transparencyLabel.Font = Enum.Font.GothamBold
-transparencyLabel.TextXAlignment = Enum.TextXAlignment.Left
-transparencyLabel.ZIndex = 11
-transparencyLabel.Parent = settingsContentFrame
+local disableTransparencyLabel = Instance.new("TextLabel")
+disableTransparencyLabel.Size = UDim2.new(0, 160, 0, 22)
+disableTransparencyLabel.Position = UDim2.new(0, 12, 0, 95)
+disableTransparencyLabel.BackgroundTransparency = 1
+disableTransparencyLabel.Text = "Disable Transparency:"
+disableTransparencyLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+disableTransparencyLabel.TextSize = 13
+disableTransparencyLabel.Font = Enum.Font.GothamBold
+disableTransparencyLabel.TextXAlignment = Enum.TextXAlignment.Left
+disableTransparencyLabel.ZIndex = 11
+disableTransparencyLabel.Parent = settingsContentFrame
 
 local disableTransparencyButton = Instance.new("TextButton")
 disableTransparencyButton.Size = UDim2.new(0, 60, 0, 28)
-disableTransparencyButton.Position = UDim2.new(0, 178, 0, 76)
+disableTransparencyButton.Position = UDim2.new(0, 178, 0, 93)
 disableTransparencyButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 disableTransparencyButton.BorderSizePixel = 0
 disableTransparencyButton.Text = "OFF"
 disableTransparencyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-disableTransparencyButton.TextSize = 13
+disableTransparencyButton.TextSize = 12
 disableTransparencyButton.Font = Enum.Font.GothamBold
 disableTransparencyButton.ZIndex = 11
 disableTransparencyButton.Parent = settingsContentFrame
@@ -430,48 +430,29 @@ local dragInput
 local dragStart
 local startPos
 local espEnabled = false
-local espLabels = {}
-local espBoxes = {}
+local espData = {}
 local lastAnimTime = 0
 local animCooldown = 0.15
 local disableTransparency = false
-local characterConnections = {}
 
-local hitboxPartNames = {
-	"HumanoidRootPart",
-	"Head",
-	"Torso",
-	"Left Arm",
-	"Right Arm",
-	"Left Leg",
-	"Right Leg",
-	"UpperTorso",
-	"LowerTorso",
-	"LeftUpperArm",
-	"LeftLowerArm",
-	"LeftHand",
-	"RightUpperArm",
-	"RightLowerArm",
-	"RightHand",
-	"LeftUpperLeg",
-	"LeftLowerLeg",
-	"LeftFoot",
-	"RightUpperLeg",
-	"RightLowerLeg",
-	"RightFoot"
-}
+local function getTeamColor(targetPlayer)
+	if targetPlayer and targetPlayer.Team then
+		return targetPlayer.TeamColor.Color
+	end
+	return Color3.fromRGB(80, 150, 255)
+end
 
 local function animateButton(button)
 	local currentTime = tick()
-	if currentTime - lastAnimTime < animCooldown then
-		return
-	end
+	if currentTime - lastAnimTime < animCooldown then return end
 	lastAnimTime = currentTime
 	local originalSize = button.Size
 	local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 	TweenService:Create(button, tweenInfo, {Size = originalSize + UDim2.new(0, 4, 0, 4)}):Play()
 	task.wait(0.1)
-	TweenService:Create(button, tweenInfo, {Size = originalSize}):Play()
+	if button and button.Parent then
+		TweenService:Create(button, tweenInfo, {Size = originalSize}):Play()
+	end
 end
 
 local function applyTheme(theme)
@@ -496,7 +477,7 @@ local function applyTheme(theme)
 		TweenService:Create(settingsTitleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(245, 245, 250)}):Play()
 		TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 		TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
-		TweenService:Create(transparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
+		TweenService:Create(disableTransparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
 		TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(200, 200, 220), TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 		TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(200, 200, 210)}):Play()
 		if not lightButton:FindFirstChild("UIStroke") then
@@ -527,123 +508,217 @@ local function applyTheme(theme)
 		TweenService:Create(settingsTitleFix, tweenInfo, {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 		TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
 		TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
-		TweenService:Create(transparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
+		TweenService:Create(disableTransparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
 		TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(100, 100, 120), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-		if lightButton:FindFirstChild("UIStroke") then
-			local lightStroke = lightButton:FindFirstChild("UIStroke")
+		local lightStroke = lightButton:FindFirstChild("UIStroke")
+		if lightStroke then
 			TweenService:Create(lightStroke, tweenInfo, {Transparency = 1}):Play()
-			task.wait(0.1)
-			lightStroke:Destroy()
+			task.delay(0.15, function()
+				if lightStroke and lightStroke.Parent then
+					lightStroke:Destroy()
+				end
+			end)
 		end
 		TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(80, 150, 255)}):Play()
 	end
 end
 
+-- ESP: Layout = [distance] [nick center] [HP]
+-- Nick center shows DisplayName + @Username if different, or just Username if same
 local function createESP(targetPlayer)
 	if targetPlayer == player then return end
-	removeESPForPlayer(targetPlayer)
+
+	-- Clean up old ESP
+	if espData[targetPlayer] then
+		if espData[targetPlayer].gui and espData[targetPlayer].gui.Parent then
+			espData[targetPlayer].gui:Destroy()
+		end
+		if espData[targetPlayer].highlight and espData[targetPlayer].highlight.Parent then
+			espData[targetPlayer].highlight:Destroy()
+		end
+		espData[targetPlayer] = nil
+	end
+
 	local char = targetPlayer.Character
 	if not char then return end
+
 	local head = char:FindFirstChild("Head")
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not (head or hrp) then return end
-	if humanoid and humanoid.Health <= 0 then return end
-	local attachPart = head or hrp
+	if not head then return end
+
+	local teamColor = getTeamColor(targetPlayer)
+	local displayName = targetPlayer.DisplayName
+	local userName = targetPlayer.Name
+	local sameNames = (string.lower(displayName) == string.lower(userName))
+
 	local billboardGui = Instance.new("BillboardGui")
-	billboardGui.Name = "ESP_" .. targetPlayer.Name
+	billboardGui.Name = "ESP_" .. userName
 	billboardGui.AlwaysOnTop = true
-	billboardGui.Size = UDim2.new(0, 200, 0, 50)
-	billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-	billboardGui.Parent = attachPart
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundTransparency = 1
-	textLabel.TextColor3 = Color3.fromRGB(80, 150, 255)
-	textLabel.TextStrokeTransparency = 0.5
-	textLabel.TextSize = 14
-	textLabel.Font = Enum.Font.GothamBold
-	textLabel.Parent = billboardGui
-	espLabels[targetPlayer] = {gui = billboardGui, label = textLabel}
+	billboardGui.StudsOffset = Vector3.new(0, 3.2, 0)
+	billboardGui.Size = UDim2.new(0, 400, 0, 60)
+	billboardGui.Parent = head
+
+	-- Main row: [distLabel] [nameLabel] [hpLabel]
+	local mainRow = Instance.new("Frame")
+	mainRow.Name = "MainRow"
+	mainRow.Size = UDim2.new(1, 0, 0, 20)
+	mainRow.Position = UDim2.new(0, 0, 0, 0)
+	mainRow.BackgroundTransparency = 1
+	mainRow.Parent = billboardGui
+
+	-- Distance label (left)
+	local distLabel = Instance.new("TextLabel")
+	distLabel.Name = "DistLabel"
+	distLabel.Size = UDim2.new(0.3, 0, 1, 0)
+	distLabel.Position = UDim2.new(0, 0, 0, 0)
+	distLabel.BackgroundTransparency = 1
+	distLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	distLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	distLabel.TextStrokeTransparency = 0.3
+	distLabel.TextSize = 11
+	distLabel.Font = Enum.Font.Gotham
+	distLabel.Text = "? studs"
+	distLabel.TextXAlignment = Enum.TextXAlignment.Right
+	distLabel.Parent = mainRow
+
+	-- Name label (center) - shows DisplayName or Username
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "NameLabel"
+	nameLabel.Size = UDim2.new(0.4, 0, 1, 0)
+	nameLabel.Position = UDim2.new(0.3, 0, 0, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextColor3 = teamColor
+	nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	nameLabel.TextStrokeTransparency = 0.3
+	nameLabel.TextSize = 14
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+	nameLabel.Parent = mainRow
+
+	if sameNames then
+		nameLabel.Text = userName
+	else
+		nameLabel.Text = displayName
+	end
+
+	-- HP label (right)
+	local hpLabel = Instance.new("TextLabel")
+	hpLabel.Name = "HpLabel"
+	hpLabel.Size = UDim2.new(0.3, 0, 1, 0)
+	hpLabel.Position = UDim2.new(0.7, 0, 0, 0)
+	hpLabel.BackgroundTransparency = 1
+	hpLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	hpLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	hpLabel.TextStrokeTransparency = 0.3
+	hpLabel.TextSize = 11
+	hpLabel.Font = Enum.Font.Gotham
+	hpLabel.Text = ""
+	hpLabel.TextXAlignment = Enum.TextXAlignment.Left
+	hpLabel.Parent = mainRow
+
+	-- Second row: @username (only if display name differs)
+	local usernameSubLabel = nil
+	if not sameNames then
+		usernameSubLabel = Instance.new("TextLabel")
+		usernameSubLabel.Name = "UsernameSubLabel"
+		usernameSubLabel.Size = UDim2.new(0.4, 0, 0, 16)
+		usernameSubLabel.Position = UDim2.new(0.3, 0, 0, 20)
+		usernameSubLabel.BackgroundTransparency = 1
+		usernameSubLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+		usernameSubLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+		usernameSubLabel.TextStrokeTransparency = 0.3
+		usernameSubLabel.TextSize = 11
+		usernameSubLabel.Font = Enum.Font.Gotham
+		usernameSubLabel.Text = "@" .. userName
+		usernameSubLabel.TextXAlignment = Enum.TextXAlignment.Center
+		usernameSubLabel.Parent = billboardGui
+	end
+
+	-- Highlight
 	local highlight = Instance.new("Highlight")
-	highlight.Name = "ESPHighlight_" .. targetPlayer.Name
+	highlight.Name = "ESPHighlight_" .. userName
 	highlight.Adornee = char
-	highlight.FillColor = Color3.fromRGB(80, 150, 255)
-	highlight.OutlineColor = Color3.fromRGB(80, 150, 255)
+	highlight.FillColor = teamColor
+	highlight.OutlineColor = teamColor
 	highlight.FillTransparency = 0.5
 	highlight.OutlineTransparency = 0
 	highlight.Parent = char
-	espBoxes[targetPlayer] = highlight
-end
 
-function removeESPForPlayer(targetPlayer)
-	if espLabels[targetPlayer] then
-		if espLabels[targetPlayer].gui and espLabels[targetPlayer].gui.Parent then
-			espLabels[targetPlayer].gui:Destroy()
-		end
-		espLabels[targetPlayer] = nil
-	end
-	if espBoxes[targetPlayer] then
-		if espBoxes[targetPlayer].Parent then
-			espBoxes[targetPlayer]:Destroy()
-		end
-		espBoxes[targetPlayer] = nil
-	end
+	espData[targetPlayer] = {
+		gui = billboardGui,
+		nameLabel = nameLabel,
+		distLabel = distLabel,
+		hpLabel = hpLabel,
+		usernameSubLabel = usernameSubLabel,
+		highlight = highlight,
+		sameNames = sameNames
+	}
 end
 
 local function removeESP(targetPlayer)
-	removeESPForPlayer(targetPlayer)
-end
-
-local function refreshAllESP()
-	if not espEnabled then return end
-	for _, targetPlayer in pairs(Players:GetPlayers()) do
-		if targetPlayer ~= player then
-			local char = targetPlayer.Character
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				local needsRefresh = false
-				if not espLabels[targetPlayer] then
-					needsRefresh = true
-				elseif espLabels[targetPlayer].gui == nil or espLabels[targetPlayer].gui.Parent == nil then
-					needsRefresh = true
-				end
-				if not espBoxes[targetPlayer] then
-					needsRefresh = true
-				elseif espBoxes[targetPlayer].Parent == nil then
-					needsRefresh = true
-				end
-				if needsRefresh then
-					createESP(targetPlayer)
-				end
-			else
-				if espLabels[targetPlayer] or espBoxes[targetPlayer] then
-					removeESP(targetPlayer)
-				end
-			end
+	if espData[targetPlayer] then
+		if espData[targetPlayer].gui and espData[targetPlayer].gui.Parent then
+			espData[targetPlayer].gui:Destroy()
 		end
-	end
-	local toClean = {}
-	for targetPlayer, _ in pairs(espLabels) do
-		if not targetPlayer or not targetPlayer.Parent then
-			table.insert(toClean, targetPlayer)
+		if espData[targetPlayer].highlight and espData[targetPlayer].highlight.Parent then
+			espData[targetPlayer].highlight:Destroy()
 		end
-	end
-	for _, targetPlayer in pairs(toClean) do
-		removeESP(targetPlayer)
+		espData[targetPlayer] = nil
 	end
 end
 
 local function updateESP()
 	if not espEnabled then return end
-	refreshAllESP()
 	for _, targetPlayer in pairs(Players:GetPlayers()) do
-		if targetPlayer ~= player and espLabels[targetPlayer] then
-			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-			if hrp and targetHrp then
-				local distance = (hrp.Position - targetHrp.Position).Magnitude
-				local studs = math.floor(distance)
-				espLabels[targetPlayer].label.Text = targetPlayer.Name .. "\n" .. studs .. " studs"
+		if targetPlayer ~= player then
+			local char = targetPlayer.Character
+			if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Head") then
+				local needsRecreate = false
+				if not espData[targetPlayer] then
+					needsRecreate = true
+				elseif not espData[targetPlayer].gui or not espData[targetPlayer].gui.Parent or not espData[targetPlayer].gui:IsDescendantOf(game) then
+					needsRecreate = true
+				elseif not espData[targetPlayer].highlight or not espData[targetPlayer].highlight.Parent or not espData[targetPlayer].highlight:IsDescendantOf(game) then
+					needsRecreate = true
+				end
+				if needsRecreate then
+					createESP(targetPlayer)
+				end
+				local data = espData[targetPlayer]
+				if data then
+					local teamColor = getTeamColor(targetPlayer)
+					local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+					local targetHrp = char:FindFirstChild("HumanoidRootPart")
+					local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+					-- Update distance
+					if data.distLabel then
+						if hrp and targetHrp then
+							data.distLabel.Text = math.floor((hrp.Position - targetHrp.Position).Magnitude) .. " studs"
+						else
+							data.distLabel.Text = "? studs"
+						end
+					end
+
+					-- Update HP
+					if data.hpLabel then
+						if humanoid then
+							data.hpLabel.Text = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth) .. " HP"
+						else
+							data.hpLabel.Text = ""
+						end
+					end
+
+					-- Update colors
+					if data.nameLabel then
+						data.nameLabel.TextColor3 = teamColor
+					end
+					if data.highlight then
+						data.highlight.FillColor = teamColor
+						data.highlight.OutlineColor = teamColor
+					end
+				end
+			elseif espData[targetPlayer] then
+				removeESP(targetPlayer)
 			end
 		end
 	end
@@ -653,114 +728,58 @@ local function updateHitboxes()
 	if not isEnabled then return end
 	for _, v in pairs(Players:GetPlayers()) do
 		if v ~= player and v.Character then
-			for _, partName in pairs(hitboxPartNames) do
-				local part = v.Character:FindFirstChild(partName)
-				if part and part:IsA("BasePart") then
-					if partName == "HumanoidRootPart" then
-						part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-					elseif partName == "Head" then
-						part.Size = Vector3.new(hitboxSize * 0.8, hitboxSize * 0.8, hitboxSize * 0.8)
-					else
-						part.Size = Vector3.new(hitboxSize * 0.7, hitboxSize * 0.7, hitboxSize * 0.7)
-					end
-					if disableTransparency then
-						part.Transparency = 1
-					else
-						part.Transparency = 0.7
-					end
-					part.CanCollide = false
-				end
-			end
-		end
-	end
-end
-
-local function resetHitboxes()
-	for _, v in pairs(Players:GetPlayers()) do
-		if v ~= player and v.Character then
 			local hrp = v.Character:FindFirstChild("HumanoidRootPart")
 			if hrp then
-				hrp.Size = Vector3.new(2, 2, 1)
-				hrp.Transparency = 1
-			end
-			local head = v.Character:FindFirstChild("Head")
-			if head then
-				head.Size = Vector3.new(2, 1, 1)
-				head.Transparency = 0
-			end
-			local torso = v.Character:FindFirstChild("Torso")
-			if torso then
-				torso.Size = Vector3.new(2, 2, 1)
-				torso.Transparency = 0
-			end
-			local upperTorso = v.Character:FindFirstChild("UpperTorso")
-			if upperTorso then
-				upperTorso.Size = Vector3.new(2, 1.6, 1)
-				upperTorso.Transparency = 0
-			end
-			local lowerTorso = v.Character:FindFirstChild("LowerTorso")
-			if lowerTorso then
-				lowerTorso.Size = Vector3.new(2, 0.4, 1)
-				lowerTorso.Transparency = 0
-			end
-			for _, partName in pairs({"Left Arm", "Right Arm", "Left Leg", "Right Leg"}) do
-				local part = v.Character:FindFirstChild(partName)
-				if part then
-					part.Size = Vector3.new(1, 2, 1)
-					part.Transparency = 0
-				end
-			end
-			for _, partName in pairs({"LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerArm", "RightLowerArm", "LeftLowerLeg", "RightLowerLeg", "LeftHand", "RightHand", "LeftFoot", "RightFoot"}) do
-				local part = v.Character:FindFirstChild(partName)
-				if part then
-					part.Transparency = 0
-				end
+				hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+				hrp.Transparency = disableTransparency and 1 or 0.7
+				hrp.CanCollide = false
 			end
 		end
 	end
 end
 
-local function setupCharacterAdded(targetPlayer)
-	if characterConnections[targetPlayer] then
-		characterConnections[targetPlayer]:Disconnect()
-	end
-	characterConnections[targetPlayer] = targetPlayer.CharacterAdded:Connect(function(char)
-		task.wait(0.5)
-		if isEnabled then
-			updateHitboxes()
-		end
+local function setupPlayerESP(targetPlayer)
+	if targetPlayer == player then return end
+	targetPlayer.CharacterAdded:Connect(function(char)
+		char:WaitForChild("HumanoidRootPart")
+		char:WaitForChild("Head")
+		char:WaitForChild("Humanoid")
+		task.wait(0.2)
 		if espEnabled then
 			createESP(targetPlayer)
+		end
+		if isEnabled then
+			local hrp = char:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+				hrp.Transparency = disableTransparency and 1 or 0.7
+				hrp.CanCollide = false
+			end
 		end
 	end)
 end
 
-for _, v in pairs(Players:GetPlayers()) do
-	if v ~= player then
-		setupCharacterAdded(v)
-	end
+for _, existingPlayer in pairs(Players:GetPlayers()) do
+	setupPlayerESP(existingPlayer)
 end
 
 Players.PlayerAdded:Connect(function(newPlayer)
-	setupCharacterAdded(newPlayer)
-	task.wait(1)
-	if isEnabled then
-		updateHitboxes()
-	end
-	if espEnabled then
-		task.wait(1)
-		createESP(newPlayer)
+	setupPlayerESP(newPlayer)
+	if newPlayer.Character then
+		if espEnabled then createESP(newPlayer) end
+		if isEnabled then
+			local hrp = newPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+				hrp.Transparency = disableTransparency and 1 or 0.7
+				hrp.CanCollide = false
+			end
+		end
 	end
 end)
 
 Players.PlayerRemoving:Connect(function(removedPlayer)
-	if espLabels[removedPlayer] or espBoxes[removedPlayer] then
-		removeESP(removedPlayer)
-	end
-	if characterConnections[removedPlayer] then
-		characterConnections[removedPlayer]:Disconnect()
-		characterConnections[removedPlayer] = nil
-	end
+	removeESP(removedPlayer)
 end)
 
 applyButton.MouseButton1Click:Connect(function()
@@ -782,7 +801,15 @@ toggleButton.MouseButton1Click:Connect(function()
 	else
 		TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 		toggleButton.Text = "Hitbox: OFF"
-		resetHitboxes()
+		for _, v in pairs(Players:GetPlayers()) do
+			if v ~= player and v.Character then
+				local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					hrp.Size = Vector3.new(2, 2, 1)
+					hrp.Transparency = 1
+				end
+			end
+		end
 	end
 end)
 
@@ -793,21 +820,18 @@ espToggleButton.MouseButton1Click:Connect(function()
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
 		espToggleButton.Text = "ESP: ON"
 		for _, v in pairs(Players:GetPlayers()) do
-			if v ~= player then
-				createESP(v)
-			end
+			if v ~= player then createESP(v) end
 		end
 	else
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 		espToggleButton.Text = "ESP: OFF"
-		for targetPlayer, _ in pairs(espLabels) do
-			removeESPForPlayer(targetPlayer)
+		local playersToRemove = {}
+		for targetPlayer in pairs(espData) do
+			table.insert(playersToRemove, targetPlayer)
 		end
-		for targetPlayer, _ in pairs(espBoxes) do
-			removeESPForPlayer(targetPlayer)
+		for _, targetPlayer in pairs(playersToRemove) do
+			removeESP(targetPlayer)
 		end
-		espLabels = {}
-		espBoxes = {}
 	end
 end)
 
@@ -821,18 +845,11 @@ disableTransparencyButton.MouseButton1Click:Connect(function()
 		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 		disableTransparencyButton.Text = "OFF"
 	end
-	if isEnabled then
-		updateHitboxes()
-	end
+	if isEnabled then updateHitboxes() end
 end)
 
-footerLabel.MouseButton1Click:Connect(function()
-	animateButton(footerLabel)
-end)
-
-footerLabelMinimized.MouseButton1Click:Connect(function()
-	animateButton(footerLabelMinimized)
-end)
+footerLabel.MouseButton1Click:Connect(function() animateButton(footerLabel) end)
+footerLabelMinimized.MouseButton1Click:Connect(function() animateButton(footerLabelMinimized) end)
 
 minimizeButton.MouseButton1Click:Connect(function()
 	if confirmFrame.Visible or settingsFrame.Visible then return end
@@ -872,16 +889,22 @@ yesButton.MouseButton1Click:Connect(function()
 	task.wait(0.3)
 	isEnabled = false
 	espEnabled = false
-	resetHitboxes()
-	for targetPlayer, _ in pairs(espLabels) do
-		removeESPForPlayer(targetPlayer)
+	for _, v in pairs(Players:GetPlayers()) do
+		if v ~= player and v.Character then
+			local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.Size = Vector3.new(2, 2, 1)
+				hrp.Transparency = 1
+			end
+		end
 	end
-	espLabels = {}
-	espBoxes = {}
-	for p, conn in pairs(characterConnections) do
-		conn:Disconnect()
+	local playersToRemove = {}
+	for targetPlayer in pairs(espData) do
+		table.insert(playersToRemove, targetPlayer)
 	end
-	characterConnections = {}
+	for _, targetPlayer in pairs(playersToRemove) do
+		removeESP(targetPlayer)
+	end
 	screenGui:Destroy()
 end)
 
@@ -959,27 +982,21 @@ end)
 applyButton.MouseEnter:Connect(function()
 	TweenService:Create(applyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 170, 255)}):Play()
 end)
-
 applyButton.MouseLeave:Connect(function()
 	TweenService:Create(applyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 150, 255)}):Play()
 end)
-
 minimizeButton.MouseEnter:Connect(function()
 	TweenService:Create(minimizeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 220, 80)}):Play()
 end)
-
 minimizeButton.MouseLeave:Connect(function()
 	TweenService:Create(minimizeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 200, 50)}):Play()
 end)
-
 closeButton.MouseEnter:Connect(function()
 	TweenService:Create(closeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
 end)
-
 closeButton.MouseLeave:Connect(function()
 	TweenService:Create(closeButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 end)
-
 settingsButtonTop.MouseEnter:Connect(function()
 	if currentTheme == "dark" then
 		TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 120, 140)}):Play()
@@ -987,7 +1004,6 @@ settingsButtonTop.MouseEnter:Connect(function()
 		TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 220, 240)}):Play()
 	end
 end)
-
 settingsButtonTop.MouseLeave:Connect(function()
 	if currentTheme == "dark" then
 		TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 100, 120)}):Play()
@@ -995,47 +1011,36 @@ settingsButtonTop.MouseLeave:Connect(function()
 		TweenService:Create(settingsButtonTop, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(200, 200, 220)}):Play()
 	end
 end)
-
 yesButton.MouseEnter:Connect(function()
 	TweenService:Create(yesButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 220, 120)}):Play()
 end)
-
 yesButton.MouseLeave:Connect(function()
 	TweenService:Create(yesButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
 end)
-
 noButton.MouseEnter:Connect(function()
 	TweenService:Create(noButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
 end)
-
 noButton.MouseLeave:Connect(function()
 	TweenService:Create(noButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 end)
-
 backButton.MouseEnter:Connect(function()
 	TweenService:Create(backButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(100, 100, 110)}):Play()
 end)
-
 backButton.MouseLeave:Connect(function()
 	TweenService:Create(backButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 80, 90)}):Play()
 end)
-
 darkButton.MouseEnter:Connect(function()
 	TweenService:Create(darkButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}):Play()
 end)
-
 darkButton.MouseLeave:Connect(function()
 	TweenService:Create(darkButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 end)
-
 lightButton.MouseEnter:Connect(function()
 	TweenService:Create(lightButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
 end)
-
 lightButton.MouseLeave:Connect(function()
 	TweenService:Create(lightButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(240, 240, 250)}):Play()
 end)
-
 espToggleButton.MouseEnter:Connect(function()
 	if espEnabled then
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 220, 120)}):Play()
@@ -1043,7 +1048,6 @@ espToggleButton.MouseEnter:Connect(function()
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
 	end
 end)
-
 espToggleButton.MouseLeave:Connect(function()
 	if espEnabled then
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
@@ -1051,7 +1055,6 @@ espToggleButton.MouseLeave:Connect(function()
 		TweenService:Create(espToggleButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 	end
 end)
-
 disableTransparencyButton.MouseEnter:Connect(function()
 	if disableTransparency then
 		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 220, 120)}):Play()
@@ -1059,7 +1062,6 @@ disableTransparencyButton.MouseEnter:Connect(function()
 		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
 	end
 end)
-
 disableTransparencyButton.MouseLeave:Connect(function()
 	if disableTransparency then
 		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
