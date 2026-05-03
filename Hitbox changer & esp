@@ -6,6 +6,29 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+local SAVE_FILE = "hitbox_settings.json"
+
+local function saveSettings(data)
+	pcall(function()
+		if writefile then
+			writefile(SAVE_FILE, game:GetService("HttpService"):JSONEncode(data))
+		end
+	end)
+end
+
+local function loadSettings()
+	local ok, result = pcall(function()
+		if readfile and isfile and isfile(SAVE_FILE) then
+			return game:GetService("HttpService"):JSONDecode(readfile(SAVE_FILE))
+		end
+		return nil
+	end)
+	if ok and result then return result end
+	return nil
+end
+
+local savedData = loadSettings()
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "HitboxChanger"
 screenGui.ResetOnSpawn = false
@@ -335,12 +358,15 @@ local backCorner = Instance.new("UICorner")
 backCorner.CornerRadius = UDim.new(0, 6)
 backCorner.Parent = backButton
 
-local settingsContentFrame = Instance.new("Frame")
+local settingsContentFrame = Instance.new("ScrollingFrame")
 settingsContentFrame.Size = UDim2.new(1, 0, 1, -35)
 settingsContentFrame.Position = UDim2.new(0, 0, 0, 35)
 settingsContentFrame.BackgroundTransparency = 1
 settingsContentFrame.BorderSizePixel = 0
 settingsContentFrame.ZIndex = 11
+settingsContentFrame.ScrollBarThickness = 3
+settingsContentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 150, 255)
+settingsContentFrame.CanvasSize = UDim2.new(0, 0, 0, 350)
 settingsContentFrame.Parent = settingsFrame
 
 local themeLabel = Instance.new("TextLabel")
@@ -421,14 +447,70 @@ local disableTransparencyCorner = Instance.new("UICorner")
 disableTransparencyCorner.CornerRadius = UDim.new(0, 7)
 disableTransparencyCorner.Parent = disableTransparencyButton
 
+local keybindSectionLabel = Instance.new("TextLabel")
+keybindSectionLabel.Size = UDim2.new(1, -24, 0, 22)
+keybindSectionLabel.Position = UDim2.new(0, 12, 0, 116)
+keybindSectionLabel.BackgroundTransparency = 1
+keybindSectionLabel.Text = "Keybinds:"
+keybindSectionLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+keybindSectionLabel.TextSize = 13
+keybindSectionLabel.Font = Enum.Font.GothamBold
+keybindSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+keybindSectionLabel.ZIndex = 11
+keybindSectionLabel.Parent = settingsContentFrame
+
+local function makeKeybindRow(labelText, yPos)
+	local rowLabel = Instance.new("TextLabel")
+	rowLabel.Size = UDim2.new(0, 130, 0, 28)
+	rowLabel.Position = UDim2.new(0, 12, 0, yPos)
+	rowLabel.BackgroundTransparency = 1
+	rowLabel.Text = labelText
+	rowLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+	rowLabel.TextSize = 12
+	rowLabel.Font = Enum.Font.Gotham
+	rowLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rowLabel.ZIndex = 11
+	rowLabel.Parent = settingsContentFrame
+
+	local rowButton = Instance.new("TextButton")
+	rowButton.Size = UDim2.new(0, 90, 0, 28)
+	rowButton.Position = UDim2.new(0, 152, 0, yPos)
+	rowButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+	rowButton.BorderSizePixel = 0
+	rowButton.Text = "None"
+	rowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	rowButton.TextSize = 12
+	rowButton.Font = Enum.Font.GothamBold
+	rowButton.ZIndex = 11
+	rowButton.Parent = settingsContentFrame
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 7)
+	rowCorner.Parent = rowButton
+
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = Color3.fromRGB(80, 80, 100)
+	rowStroke.Thickness = 1
+	rowStroke.ZIndex = 11
+	rowStroke.Parent = rowButton
+
+	return rowLabel, rowButton, rowStroke
+end
+
+local keybindHitboxLabel, keybindHitboxButton, keybindHitboxStroke = makeKeybindRow("Toggle Hitbox:", 142)
+local keybindEspLabel, keybindEspButton, keybindEspStroke = makeKeybindRow("Toggle ESP:", 178)
+local keybindGuiLabel, keybindGuiButton, keybindGuiStroke = makeKeybindRow("Toggle GUI:", 214)
+local keybindMinimizeLabel, keybindMinimizeButton, keybindMinimizeStroke = makeKeybindRow("Minimize:", 250)
+local keybindApplyLabel, keybindApplyButton, keybindApplyStroke = makeKeybindRow("Apply Hitbox:", 286)
+
 local hitboxSize = 10
 local isEnabled = false
 local isMinimized = false
 local currentTheme = "dark"
 local isDragging = false
-local dragInput
-local dragStart
-local startPos
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
 local espEnabled = false
 local espData = {}
 local lastAnimTime = 0
@@ -436,30 +518,125 @@ local animCooldown = 0.15
 local disableTransparency = false
 local characterConnections = {}
 local originalData = {}
+local guiVisible = true
+local modifiedChars = {}
+
+local keybinds = {
+	hitbox = nil,
+	esp = nil,
+	gui = nil,
+	minimize = nil,
+	apply = nil,
+}
+
+local listeningFor = nil
+
+local keybindButtons = {
+	hitbox = keybindHitboxButton,
+	esp = keybindEspButton,
+	gui = keybindGuiButton,
+	minimize = keybindMinimizeButton,
+	apply = keybindApplyButton,
+}
+
+local keybindStrokes = {
+	hitbox = keybindHitboxStroke,
+	esp = keybindEspStroke,
+	gui = keybindGuiStroke,
+	minimize = keybindMinimizeStroke,
+	apply = keybindApplyStroke,
+}
+
+local keybindLabels = {
+	hitbox = keybindHitboxLabel,
+	esp = keybindEspLabel,
+	gui = keybindGuiLabel,
+	minimize = keybindMinimizeLabel,
+	apply = keybindApplyLabel,
+}
 
 local hitboxPartNames = {
-	"HumanoidRootPart",
-	"Head",
-	"Torso",
-	"Left Arm",
-	"Right Arm",
-	"Left Leg",
-	"Right Leg",
-	"UpperTorso",
-	"LowerTorso",
-	"LeftUpperArm",
-	"LeftLowerArm",
-	"LeftHand",
-	"RightUpperArm",
-	"RightLowerArm",
-	"RightHand",
-	"LeftUpperLeg",
-	"LeftLowerLeg",
-	"LeftFoot",
-	"RightUpperLeg",
-	"RightLowerLeg",
-	"RightFoot"
+	"HumanoidRootPart", "Head", "Torso",
+	"Left Arm", "Right Arm", "Left Leg", "Right Leg",
+	"UpperTorso", "LowerTorso",
+	"LeftUpperArm", "LeftLowerArm", "LeftHand",
+	"RightUpperArm", "RightLowerArm", "RightHand",
+	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+	"RightUpperLeg", "RightLowerLeg", "RightFoot"
 }
+
+local function getKeyName(keyCode)
+	if keyCode == nil then return "None" end
+	return keyCode.Name
+end
+
+local function collectAndSave()
+	local data = {
+		hitboxSize = hitboxSize,
+		theme = currentTheme,
+		disableTransparency = disableTransparency,
+		keybinds = {}
+	}
+	for action, kc in pairs(keybinds) do
+		data.keybinds[action] = kc ~= nil and kc.Name or "None"
+	end
+	saveSettings(data)
+end
+
+local function setListening(actionName)
+	if listeningFor then
+		local prevBtn = keybindButtons[listeningFor]
+		local prevStroke = keybindStrokes[listeningFor]
+		if prevBtn and prevBtn.Parent then
+			prevBtn.Text = getKeyName(keybinds[listeningFor])
+			TweenService:Create(prevStroke, TweenInfo.new(0.1), {Color = Color3.fromRGB(80, 80, 100)}):Play()
+			TweenService:Create(prevBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
+		end
+	end
+	listeningFor = actionName
+	if actionName then
+		local btn = keybindButtons[actionName]
+		local stroke = keybindStrokes[actionName]
+		if btn and btn.Parent then
+			btn.Text = "Press key..."
+			TweenService:Create(stroke, TweenInfo.new(0.1), {Color = Color3.fromRGB(80, 150, 255)}):Play()
+			TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 50, 80)}):Play()
+		end
+	end
+end
+
+local function applyKeybind(actionName, keyCode)
+	keybinds[actionName] = keyCode
+	local btn = keybindButtons[actionName]
+	local stroke = keybindStrokes[actionName]
+	if btn and btn.Parent then
+		btn.Text = getKeyName(keyCode)
+		TweenService:Create(stroke, TweenInfo.new(0.1), {Color = Color3.fromRGB(80, 80, 100)}):Play()
+		TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
+	end
+	collectAndSave()
+end
+
+for actionName, btn in pairs(keybindButtons) do
+	local capturedAction = actionName
+	btn.MouseButton1Click:Connect(function()
+		if listeningFor == capturedAction then
+			setListening(nil)
+		else
+			setListening(capturedAction)
+		end
+	end)
+	btn.MouseEnter:Connect(function()
+		if listeningFor ~= capturedAction then
+			TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(55, 55, 75)}):Play()
+		end
+	end)
+	btn.MouseLeave:Connect(function()
+		if listeningFor ~= capturedAction then
+			TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
+		end
+	end)
+end
 
 local function getTeamColor(targetPlayer)
 	if targetPlayer and targetPlayer.Team then
@@ -473,12 +650,16 @@ local function animateButton(button)
 	if currentTime - lastAnimTime < animCooldown then return end
 	lastAnimTime = currentTime
 	local originalSize = button.Size
-	local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	TweenService:Create(button, tweenInfo, {Size = originalSize + UDim2.new(0, 4, 0, 4)}):Play()
-	task.wait(0.1)
-	if button and button.Parent then
-		TweenService:Create(button, tweenInfo, {Size = originalSize}):Play()
-	end
+	local tweenInfo = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local growTween = TweenService:Create(button, tweenInfo, {
+		Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset + 4, originalSize.Y.Scale, originalSize.Y.Offset + 4)
+	})
+	growTween:Play()
+	growTween.Completed:Connect(function()
+		if button and button.Parent then
+			TweenService:Create(button, tweenInfo, {Size = originalSize}):Play()
+		end
+	end)
 end
 
 local function applyTheme(theme)
@@ -504,17 +685,22 @@ local function applyTheme(theme)
 		TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 		TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
 		TweenService:Create(transparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
+		TweenService:Create(keybindSectionLabel, tweenInfo, {TextColor3 = Color3.fromRGB(60, 60, 70)}):Play()
 		TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(200, 200, 220), TextColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 		TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(200, 200, 210)}):Play()
-		if not lightButton:FindFirstChild("UIStroke") then
-			local lightStroke = Instance.new("UIStroke")
+		for _, lbl in pairs(keybindLabels) do
+			TweenService:Create(lbl, tweenInfo, {TextColor3 = Color3.fromRGB(80, 80, 90)}):Play()
+		end
+		local lightStroke = lightButton:FindFirstChild("UIStroke")
+		if not lightStroke then
+			lightStroke = Instance.new("UIStroke")
 			lightStroke.Color = Color3.fromRGB(80, 150, 255)
 			lightStroke.Thickness = 3
 			lightStroke.Transparency = 1
 			lightStroke.ZIndex = 11
 			lightStroke.Parent = lightButton
-			TweenService:Create(lightStroke, tweenInfo, {Transparency = 0}):Play()
 		end
+		TweenService:Create(lightStroke, tweenInfo, {Transparency = 0}):Play()
 	else
 		TweenService:Create(mainFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(20, 20, 25)}):Play()
 		TweenService:Create(contentFrame, tweenInfo, {BackgroundColor3 = Color3.fromRGB(20, 20, 25)}):Play()
@@ -535,18 +721,21 @@ local function applyTheme(theme)
 		TweenService:Create(settingsTitleLabel, tweenInfo, {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
 		TweenService:Create(themeLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
 		TweenService:Create(transparencyLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
+		TweenService:Create(keybindSectionLabel, tweenInfo, {TextColor3 = Color3.fromRGB(200, 200, 210)}):Play()
 		TweenService:Create(settingsButtonTop, tweenInfo, {BackgroundColor3 = Color3.fromRGB(100, 100, 120), TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+		for _, lbl in pairs(keybindLabels) do
+			TweenService:Create(lbl, tweenInfo, {TextColor3 = Color3.fromRGB(180, 180, 190)}):Play()
+		end
 		local lightStroke = lightButton:FindFirstChild("UIStroke")
 		if lightStroke then
 			TweenService:Create(lightStroke, tweenInfo, {Transparency = 1}):Play()
 			task.delay(0.15, function()
-				if lightStroke and lightStroke.Parent then
-					lightStroke:Destroy()
-				end
+				if lightStroke and lightStroke.Parent then lightStroke:Destroy() end
 			end)
 		end
 		TweenService:Create(darkStroke, tweenInfo, {Color = Color3.fromRGB(80, 150, 255)}):Play()
 	end
+	collectAndSave()
 end
 
 local function removeESP(targetPlayer)
@@ -574,10 +763,7 @@ local function createESP(targetPlayer)
 	local attachPart = head or hrpPart
 	local teamColor = getTeamColor(targetPlayer)
 	local hasDisplayName = string.lower(targetPlayer.DisplayName) ~= string.lower(targetPlayer.Name)
-	local guiHeight = 20
-	if hasDisplayName then
-		guiHeight = 36
-	end
+	local guiHeight = hasDisplayName and 36 or 20
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = "ESP_" .. targetPlayer.Name
 	billboardGui.AlwaysOnTop = true
@@ -611,13 +797,7 @@ local function createESP(targetPlayer)
 		infoLabel.Text = ""
 		infoLabel.TextXAlignment = Enum.TextXAlignment.Center
 		infoLabel.Parent = billboardGui
-		espData[targetPlayer] = {
-			gui = billboardGui,
-			displayLabel = displayLabel,
-			infoLabel = infoLabel,
-			highlight = nil,
-			hasDisplayName = true
-		}
+		espData[targetPlayer] = {gui = billboardGui, displayLabel = displayLabel, infoLabel = infoLabel, highlight = nil, hasDisplayName = true}
 	else
 		local textLabel = Instance.new("TextLabel")
 		textLabel.Name = "InfoLabel"
@@ -631,13 +811,7 @@ local function createESP(targetPlayer)
 		textLabel.Text = ""
 		textLabel.TextXAlignment = Enum.TextXAlignment.Center
 		textLabel.Parent = billboardGui
-		espData[targetPlayer] = {
-			gui = billboardGui,
-			displayLabel = nil,
-			infoLabel = textLabel,
-			highlight = nil,
-			hasDisplayName = false
-		}
+		espData[targetPlayer] = {gui = billboardGui, displayLabel = nil, infoLabel = textLabel, highlight = nil, hasDisplayName = false}
 	end
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "ESPHighlight_" .. targetPlayer.Name
@@ -663,14 +837,12 @@ local function updateESP()
 					local needsRecreate = false
 					if not espData[targetPlayer] then
 						needsRecreate = true
-					elseif not espData[targetPlayer].gui or not espData[targetPlayer].gui.Parent or not espData[targetPlayer].gui:IsDescendantOf(game) then
+					elseif not espData[targetPlayer].gui or not espData[targetPlayer].gui.Parent then
 						needsRecreate = true
-					elseif not espData[targetPlayer].highlight or not espData[targetPlayer].highlight.Parent or not espData[targetPlayer].highlight:IsDescendantOf(game) then
+					elseif not espData[targetPlayer].highlight or not espData[targetPlayer].highlight.Parent then
 						needsRecreate = true
 					end
-					if needsRecreate then
-						createESP(targetPlayer)
-					end
+					if needsRecreate then createESP(targetPlayer) end
 					local data = espData[targetPlayer]
 					if data and data.infoLabel then
 						local teamColor = getTeamColor(targetPlayer)
@@ -685,9 +857,7 @@ local function updateESP()
 							hpText = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth) .. " HP"
 						end
 						if data.hasDisplayName then
-							if data.displayLabel then
-								data.displayLabel.TextColor3 = teamColor
-							end
+							if data.displayLabel then data.displayLabel.TextColor3 = teamColor end
 							data.infoLabel.Text = studsText .. " studs | @" .. targetPlayer.Name .. " | " .. hpText
 						else
 							data.infoLabel.Text = studsText .. " studs | " .. targetPlayer.Name .. " | " .. hpText
@@ -718,22 +888,28 @@ end
 local function saveOriginalData(char)
 	if not char then return end
 	if originalData[char] then return end
-	originalData[char] = {}
+	local data = {}
+	local valid = false
 	for _, child in pairs(char:GetChildren()) do
 		if child:IsA("BasePart") then
-			originalData[char][child.Name] = {
+			data[child.Name] = {
 				Size = child.Size,
 				Transparency = child.Transparency,
 				CanCollide = child.CanCollide,
 				Color = child.Color,
-				Material = child.Material
+				Material = child.Material,
+				CastShadow = child.CastShadow,
 			}
+			valid = true
 		end
+	end
+	if valid then
+		originalData[char] = data
 	end
 end
 
 local function restoreOriginalData(char)
-	if not char then return end
+	if not char or not char.Parent then return end
 	local saved = originalData[char]
 	if not saved then return end
 	for partName, data in pairs(saved) do
@@ -744,9 +920,47 @@ local function restoreOriginalData(char)
 			part.CanCollide = data.CanCollide
 			part.Color = data.Color
 			part.Material = data.Material
+			part.CastShadow = data.CastShadow
 		end
 	end
 	originalData[char] = nil
+	modifiedChars[char] = nil
+end
+
+local function forceRestoreAllHitboxes()
+	for _, v in pairs(Players:GetPlayers()) do
+		if v ~= player and v.Character then
+			local char = v.Character
+			if originalData[char] then
+				restoreOriginalData(char)
+			else
+				for _, partName in pairs(hitboxPartNames) do
+					local part = char:FindFirstChild(partName)
+					if part and part:IsA("BasePart") then
+						local humanoidDesc = v:FindFirstChildOfClass("HumanoidDescription")
+						part.CanCollide = false
+						if partName == "HumanoidRootPart" then
+							part.Transparency = 1
+						end
+					end
+				end
+			end
+		end
+	end
+	local toClean = {}
+	for char in pairs(originalData) do
+		table.insert(toClean, char)
+	end
+	for _, char in pairs(toClean) do
+		originalData[char] = nil
+	end
+	local toClean2 = {}
+	for char in pairs(modifiedChars) do
+		table.insert(toClean2, char)
+	end
+	for _, char in pairs(toClean2) do
+		modifiedChars[char] = nil
+	end
 end
 
 local function updateHitboxes()
@@ -754,42 +968,48 @@ local function updateHitboxes()
 	for _, v in pairs(Players:GetPlayers()) do
 		if v ~= player and v.Character then
 			local char = v.Character
+			if not char.Parent then continue end
 			local humanoid = char:FindFirstChildOfClass("Humanoid")
-			if humanoid and humanoid.Health > 0 then
+			if not humanoid or humanoid.Health <= 0 then continue end
+			if not originalData[char] then
 				saveOriginalData(char)
-				local teamColor = getTeamColor(v)
-				for _, partName in pairs(hitboxPartNames) do
-					local part = char:FindFirstChild(partName)
-					if part and part:IsA("BasePart") then
-						if partName == "HumanoidRootPart" then
-							part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-							part.Transparency = 1
-							part.CanCollide = false
-						elseif partName == "Head" then
-							part.Size = Vector3.new(hitboxSize * 0.8, hitboxSize * 0.8, hitboxSize * 0.8)
-							part.CanCollide = false
-							part.Color = teamColor
-							part.Material = Enum.Material.ForceField
-							if disableTransparency then
-								part.Transparency = 1
-							else
-								part.Transparency = 0.7
-							end
-						else
-							part.Size = Vector3.new(hitboxSize * 0.7, hitboxSize * 0.7, hitboxSize * 0.7)
-							part.CanCollide = false
-							part.Color = teamColor
-							part.Material = Enum.Material.ForceField
-							if disableTransparency then
-								part.Transparency = 1
-							else
-								part.Transparency = 0.7
-							end
-						end
+			end
+			if not originalData[char] then continue end
+			modifiedChars[char] = v
+			local teamColor = getTeamColor(v)
+			for _, partName in pairs(hitboxPartNames) do
+				local part = char:FindFirstChild(partName)
+				if part and part:IsA("BasePart") then
+					if partName == "HumanoidRootPart" then
+						part.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+						part.Transparency = 1
+						part.CanCollide = false
+					elseif partName == "Head" then
+						part.Size = Vector3.new(hitboxSize * 0.8, hitboxSize * 0.8, hitboxSize * 0.8)
+						part.CanCollide = false
+						part.Color = teamColor
+						part.Material = Enum.Material.ForceField
+						part.Transparency = disableTransparency and 1 or 0.7
+					else
+						part.Size = Vector3.new(hitboxSize * 0.7, hitboxSize * 0.7, hitboxSize * 0.7)
+						part.CanCollide = false
+						part.Color = teamColor
+						part.Material = Enum.Material.ForceField
+						part.Transparency = disableTransparency and 1 or 0.7
 					end
 				end
 			end
 		end
+	end
+	local toClean = {}
+	for char in pairs(originalData) do
+		if not char or not char.Parent then
+			table.insert(toClean, char)
+		end
+	end
+	for _, char in pairs(toClean) do
+		originalData[char] = nil
+		modifiedChars[char] = nil
 	end
 end
 
@@ -801,134 +1021,43 @@ local function resetHitboxes()
 	end
 	local toClean = {}
 	for char in pairs(originalData) do
-		if not char or not char.Parent then
-			table.insert(toClean, char)
-		end
+		table.insert(toClean, char)
 	end
 	for _, char in pairs(toClean) do
 		originalData[char] = nil
+		modifiedChars[char] = nil
 	end
 end
 
-local function setupCharacterAdded(targetPlayer)
-	if characterConnections[targetPlayer] then
-		characterConnections[targetPlayer]:Disconnect()
-	end
-	characterConnections[targetPlayer] = targetPlayer.CharacterAdded:Connect(function(char)
-		task.wait(0.5)
-		if isEnabled and char and char.Parent then
-			saveOriginalData(char)
-			updateHitboxes()
-		end
-		if espEnabled then
-			createESP(targetPlayer)
-		end
-	end)
-end
-
-for _, v in pairs(Players:GetPlayers()) do
-	if v ~= player then
-		setupCharacterAdded(v)
-	end
-end
-
-Players.PlayerAdded:Connect(function(newPlayer)
-	setupCharacterAdded(newPlayer)
-	task.wait(1)
-	if isEnabled then
-		updateHitboxes()
-	end
-	if espEnabled then
-		createESP(newPlayer)
-	end
-end)
-
-Players.PlayerRemoving:Connect(function(removedPlayer)
-	removeESP(removedPlayer)
-	if characterConnections[removedPlayer] then
-		characterConnections[removedPlayer]:Disconnect()
-		characterConnections[removedPlayer] = nil
-	end
-	if removedPlayer.Character then
-		originalData[removedPlayer.Character] = nil
-	end
-end)
-
-applyButton.MouseButton1Click:Connect(function()
-	animateButton(applyButton)
+local function doApplyHitbox()
 	local inputValue = tonumber(textBox.Text)
 	if inputValue then
-		hitboxSize = inputValue
+		hitboxSize = math.max(1, inputValue)
+		textBox.Text = tostring(hitboxSize)
 		if isEnabled then
 			updateHitboxes()
 		end
-	end
-end)
-
-toggleButton.MouseButton1Click:Connect(function()
-	animateButton(toggleButton)
-	isEnabled = not isEnabled
-	if isEnabled then
-		TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
-		toggleButton.Text = "Hitbox: ON"
-		updateHitboxes()
-	else
-		TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
-		toggleButton.Text = "Hitbox: OFF"
-		resetHitboxes()
-	end
-end)
-
-espToggleButton.MouseButton1Click:Connect(function()
-	animateButton(espToggleButton)
-	espEnabled = not espEnabled
-	if espEnabled then
-		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
-		espToggleButton.Text = "ESP: ON"
-		for _, v in pairs(Players:GetPlayers()) do
-			if v ~= player then
-				createESP(v)
+		collectAndSave()
+		animateButton(applyButton)
+		TweenService:Create(applyButton, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(50, 220, 120)}):Play()
+		task.delay(0.25, function()
+			if applyButton and applyButton.Parent then
+				TweenService:Create(applyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 150, 255)}):Play()
 			end
-		end
+		end)
 	else
-		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
-		espToggleButton.Text = "ESP: OFF"
-		local playersToRemove = {}
-		for targetPlayer in pairs(espData) do
-			table.insert(playersToRemove, targetPlayer)
-		end
-		for _, targetPlayer in pairs(playersToRemove) do
-			removeESP(targetPlayer)
-		end
+		TweenService:Create(textBoxStroke, TweenInfo.new(0.08), {Color = Color3.fromRGB(220, 50, 50)}):Play()
+		task.delay(0.4, function()
+			if textBoxStroke and textBoxStroke.Parent then
+				local col = currentTheme == "light" and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(80, 80, 90)
+				TweenService:Create(textBoxStroke, TweenInfo.new(0.1), {Color = col}):Play()
+			end
+		end)
 	end
-end)
+end
 
-disableTransparencyButton.MouseButton1Click:Connect(function()
-	animateButton(disableTransparencyButton)
-	disableTransparency = not disableTransparency
-	if disableTransparency then
-		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
-		disableTransparencyButton.Text = "ON"
-	else
-		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
-		disableTransparencyButton.Text = "OFF"
-	end
-	if isEnabled then
-		updateHitboxes()
-	end
-end)
-
-footerLabel.MouseButton1Click:Connect(function()
-	animateButton(footerLabel)
-end)
-
-footerLabelMinimized.MouseButton1Click:Connect(function()
-	animateButton(footerLabelMinimized)
-end)
-
-minimizeButton.MouseButton1Click:Connect(function()
+local function doMinimize()
 	if confirmFrame.Visible or settingsFrame.Visible then return end
-	animateButton(minimizeButton)
 	isMinimized = not isMinimized
 	if isMinimized then
 		TweenService:Create(mainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 260, 0, 60)}):Play()
@@ -941,6 +1070,159 @@ minimizeButton.MouseButton1Click:Connect(function()
 		footerLabel.Visible = true
 		footerLabelMinimized.Visible = false
 	end
+end
+
+local function doToggleHitbox()
+	isEnabled = not isEnabled
+	if isEnabled then
+		TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+		toggleButton.Text = "Hitbox: ON"
+		updateHitboxes()
+	else
+		TweenService:Create(toggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+		toggleButton.Text = "Hitbox: OFF"
+		resetHitboxes()
+	end
+end
+
+local function doToggleESP()
+	espEnabled = not espEnabled
+	if espEnabled then
+		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+		espToggleButton.Text = "ESP: ON"
+		for _, v in pairs(Players:GetPlayers()) do
+			if v ~= player then createESP(v) end
+		end
+	else
+		TweenService:Create(espToggleButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+		espToggleButton.Text = "ESP: OFF"
+		local playersToRemove = {}
+		for targetPlayer in pairs(espData) do
+			table.insert(playersToRemove, targetPlayer)
+		end
+		for _, targetPlayer in pairs(playersToRemove) do
+			removeESP(targetPlayer)
+		end
+	end
+end
+
+local function doToggleGui()
+	guiVisible = not guiVisible
+	mainFrame.Visible = guiVisible
+end
+
+local function setupCharacterAdded(targetPlayer)
+	if characterConnections[targetPlayer] then
+		characterConnections[targetPlayer]:Disconnect()
+		characterConnections[targetPlayer] = nil
+	end
+	characterConnections[targetPlayer] = targetPlayer.CharacterAdded:Connect(function(char)
+		originalData[char] = nil
+		modifiedChars[char] = nil
+		task.wait(0.5)
+		if not char or not char.Parent then return end
+		if isEnabled then
+			saveOriginalData(char)
+			updateHitboxes()
+		end
+		if espEnabled then
+			createESP(targetPlayer)
+		end
+	end)
+end
+
+local function applyLoadedSettings()
+	if not savedData then return end
+	if savedData.hitboxSize then
+		hitboxSize = math.max(1, savedData.hitboxSize)
+		textBox.Text = tostring(hitboxSize)
+	end
+	if savedData.disableTransparency ~= nil then
+		disableTransparency = savedData.disableTransparency
+		if disableTransparency then
+			disableTransparencyButton.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+			disableTransparencyButton.Text = "ON"
+		else
+			disableTransparencyButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+			disableTransparencyButton.Text = "OFF"
+		end
+	end
+	if savedData.keybinds then
+		for action, keyName in pairs(savedData.keybinds) do
+			if keyName and keyName ~= "None" then
+				local ok, kc = pcall(function()
+					return Enum.KeyCode[keyName]
+				end)
+				if ok and kc then
+					keybinds[action] = kc
+					if keybindButtons[action] then
+						keybindButtons[action].Text = keyName
+					end
+				end
+			end
+		end
+	end
+	if savedData.theme then
+		applyTheme(savedData.theme)
+	end
+end
+
+for _, v in pairs(Players:GetPlayers()) do
+	if v ~= player then
+		setupCharacterAdded(v)
+	end
+end
+
+Players.PlayerAdded:Connect(function(newPlayer)
+	setupCharacterAdded(newPlayer)
+	task.wait(1)
+	if isEnabled then updateHitboxes() end
+	if espEnabled then createESP(newPlayer) end
+end)
+
+Players.PlayerRemoving:Connect(function(removedPlayer)
+	removeESP(removedPlayer)
+	if characterConnections[removedPlayer] then
+		characterConnections[removedPlayer]:Disconnect()
+		characterConnections[removedPlayer] = nil
+	end
+	if removedPlayer.Character then
+		originalData[removedPlayer.Character] = nil
+		modifiedChars[removedPlayer.Character] = nil
+	end
+end)
+
+applyButton.MouseButton1Click:Connect(function()
+	doApplyHitbox()
+end)
+
+toggleButton.MouseButton1Click:Connect(function()
+	animateButton(toggleButton)
+	doToggleHitbox()
+end)
+
+espToggleButton.MouseButton1Click:Connect(function()
+	animateButton(espToggleButton)
+	doToggleESP()
+end)
+
+disableTransparencyButton.MouseButton1Click:Connect(function()
+	animateButton(disableTransparencyButton)
+	disableTransparency = not disableTransparency
+	if disableTransparency then
+		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(50, 200, 100)}):Play()
+		disableTransparencyButton.Text = "ON"
+	else
+		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
+		disableTransparencyButton.Text = "OFF"
+	end
+	if isEnabled then updateHitboxes() end
+	collectAndSave()
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+	animateButton(minimizeButton)
+	doMinimize()
 end)
 
 closeButton.MouseButton1Click:Connect(function()
@@ -960,11 +1242,9 @@ end)
 
 yesButton.MouseButton1Click:Connect(function()
 	animateButton(yesButton)
-	TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Position = UDim2.new(0.5, -130, 0.5, -90), Size = UDim2.new(0, 0, 0, 0)}):Play()
-	task.wait(0.3)
 	isEnabled = false
 	espEnabled = false
-	resetHitboxes()
+	forceRestoreAllHitboxes()
 	local playersToRemove = {}
 	for targetPlayer in pairs(espData) do
 		table.insert(playersToRemove, targetPlayer)
@@ -972,11 +1252,22 @@ yesButton.MouseButton1Click:Connect(function()
 	for _, targetPlayer in pairs(playersToRemove) do
 		removeESP(targetPlayer)
 	end
-	for p, conn in pairs(characterConnections) do
+	for _, conn in pairs(characterConnections) do
 		conn:Disconnect()
 	end
 	characterConnections = {}
 	originalData = {}
+	modifiedChars = {}
+	TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+		Size = UDim2.new(0, 0, 0, 0),
+		Position = UDim2.new(
+			mainFrame.Position.X.Scale,
+			mainFrame.Position.X.Offset + 130,
+			mainFrame.Position.Y.Scale,
+			mainFrame.Position.Y.Offset + 90
+		)
+	}):Play()
+	task.wait(0.3)
 	screenGui:Destroy()
 end)
 
@@ -1000,13 +1291,14 @@ settingsButtonTop.MouseButton1Click:Connect(function()
 	end
 	settingsFrame.Visible = true
 	settingsFrame.Position = UDim2.new(1, 0, 0, 0)
-	TweenService:Create(settingsFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+	TweenService:Create(settingsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 end)
 
 backButton.MouseButton1Click:Connect(function()
 	animateButton(backButton)
-	TweenService:Create(settingsFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {Position = UDim2.new(1, 0, 0, 0)}):Play()
-	task.wait(0.1)
+	if listeningFor then setListening(nil) end
+	TweenService:Create(settingsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 0, 0, 0)}):Play()
+	task.wait(0.2)
 	settingsFrame.Visible = false
 end)
 
@@ -1020,6 +1312,33 @@ lightButton.MouseButton1Click:Connect(function()
 	applyTheme("light")
 end)
 
+footerLabel.MouseButton1Click:Connect(function()
+	animateButton(footerLabel)
+end)
+
+footerLabelMinimized.MouseButton1Click:Connect(function()
+	animateButton(footerLabelMinimized)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+	if listeningFor then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			setListening(nil)
+			return
+		end
+		applyKeybind(listeningFor, input.KeyCode)
+		setListening(nil)
+		return
+	end
+	if keybinds.hitbox and input.KeyCode == keybinds.hitbox then doToggleHitbox() end
+	if keybinds.esp and input.KeyCode == keybinds.esp then doToggleESP() end
+	if keybinds.gui and input.KeyCode == keybinds.gui then doToggleGui() end
+	if keybinds.minimize and input.KeyCode == keybinds.minimize then doMinimize() end
+	if keybinds.apply and input.KeyCode == keybinds.apply then doApplyHitbox() end
+end)
+
 RunService.Heartbeat:Connect(function()
 	if isEnabled then
 		updateHitboxes()
@@ -1028,6 +1347,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 titleBar.InputBegan:Connect(function(input)
+	if not guiVisible then return end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		isDragging = true
 		dragStart = input.Position
@@ -1041,15 +1361,22 @@ titleBar.InputBegan:Connect(function(input)
 end)
 
 titleBar.InputChanged:Connect(function(input)
+	if not guiVisible then return end
 	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 		dragInput = input
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
+	if not guiVisible then return end
 	if input == dragInput and isDragging then
 		local delta = input.Position - dragStart
-		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
 	end
 end)
 
@@ -1143,3 +1470,5 @@ disableTransparencyButton.MouseLeave:Connect(function()
 		TweenService:Create(disableTransparencyButton, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 50, 50)}):Play()
 	end
 end)
+
+applyLoadedSettings()
